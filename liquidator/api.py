@@ -229,7 +229,9 @@ def liquidate(username, password):
         logger.info("Processing %s items for appid=%s, contextid=%s", len(items), appid, contextid)
 
         for item in items:
-            price = get_price(market_jar, auth_ctx, item) 
+            price = get_price(market_jar, auth_ctx, item)
+            while not price:  
+                time.sleep(5)
             if price:
                 if price > 20:
                     price = math.ceil(float(price) / 1.155)
