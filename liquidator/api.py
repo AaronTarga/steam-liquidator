@@ -4,6 +4,7 @@ import pickle
 import json
 import requests
 import math
+import time
 
 from .crypto import make_key, encrypt
 
@@ -232,6 +233,7 @@ def liquidate(username, password):
             price = get_price(market_jar, auth_ctx, item)
             while not price:  
                 time.sleep(5)
+                price = get_price(market_jar, auth_ctx, item)
             if price:
                 if price > 20:
                     price = math.ceil(float(price) / 1.155)
