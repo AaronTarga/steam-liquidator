@@ -138,18 +138,20 @@ def list_inventory(jar, auth_ctx, appid, contextid):
     return [dict(item, **asset) for (asset, item) in items
             if item.get('marketable')]
 
-
 def get_price(jar, auth_ctx, item_info):
     params = {
         'appid': item_info['appid'],
         'country': jar['steamCountry'].split('|')[0],
-        'currency': item_info['currency'],
+        'currency': 3, #for euro
         'market_hash_name': item_info['market_hash_name']
     }
-
+  
     resp = requests.get(URL_PRICE_OVERVIEW, params, cookies=jar)
     try:
-        return int(float(resp.json()['lowest_price'][1:]) * 100)
+        price = resp.json()['lowest_price']
+        price = price[:len(price)-1]
+        price = price.replace(",",".")
+        return int(float(price) * 100)
     except:
         logger.warn("No price found for item %s", params['market_hash_name'])
 
@@ -187,6 +189,14 @@ def save_cached_obj(filename, jar):
     with open(filename, 'wb') as f:
         return pickle.dump(jar, f)
 
+def get_types(pages):
+    types = []
+    for (id,y) in pages:
+        types.append(id)
+    uniques = []
+    [uniques.append(i) for i in types if i not in uniques]
+    return uniques
+
 
 def liquidate(username, password):
     jar = requests.cookies.RequestsCookieJar()
@@ -201,8 +211,17 @@ def liquidate(username, password):
 
     market_jar['timezoneOffset'] = '-25200,0'
 
-
     inventories = extract_inventories(market_jar, auth_ctx)
+
+    types = get_types(inventories)
+
+    games = input("Select inventories you want to sell seperated by space " + str(types) + " :\n")
+
+    selected_games = games.split()
+
+    inventories = [(x,y) for (x,y) in inventories if x in selected_games]
+
+
     for appid, contextid in inventories:
         items = list_inventory(market_jar, auth_ctx, appid, contextid)
 
@@ -212,4 +231,4 @@ def liquidate(username, password):
             price = get_price(market_jar, auth_ctx, item) 
             if price:
                 logger.info("Selling item %s for %s cents", item['market_hash_name'], price)
-                sell_item(market_jar, auth_ctx, item, price)
+                print(sell_item(market_jar, auth_ctx, item, price))
