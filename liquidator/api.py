@@ -3,6 +3,7 @@ import logging
 import pickle
 import json
 import requests
+import math
 
 from .crypto import make_key, encrypt
 
@@ -230,5 +231,7 @@ def liquidate(username, password):
         for item in items:
             price = get_price(market_jar, auth_ctx, item) 
             if price:
+                price = math.ceil((price / 1,155)*100) / 100
+                print(price)
                 logger.info("Selling item %s for %s cents", item['market_hash_name'], price)
                 print(sell_item(market_jar, auth_ctx, item, price))
