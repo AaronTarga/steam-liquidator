@@ -231,7 +231,9 @@ def liquidate(username, password):
         for item in items:
             price = get_price(market_jar, auth_ctx, item) 
             if price:
-                price = math.ceil((price / 1,155)*100) / 100
-                print(price)
+                if price > 20:
+                    price = math.ceil(float(price) / 1.155)
+                else:
+                    price -= 2
                 logger.info("Selling item %s for %s cents", item['market_hash_name'], price)
                 print(sell_item(market_jar, auth_ctx, item, price))
