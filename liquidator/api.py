@@ -199,6 +199,30 @@ def get_types(pages):
     [uniques.append(i) for i in types if i not in uniques]
     return uniques
 
+def unique_market_names(items):
+    names = [] 
+    for item in items:
+        count = 0
+        for filtered in names:
+            if item['market_name'] == filtered:
+                count += 1
+        if count == 0:
+            names.append(item['market_name'])
+    return names
+
+def list_items(items):
+    item_tuple = []
+    for item in items:
+        item_tuple.append((item['market_name'],item['amount']))
+    return item_tuple
+
+def print_items(items):
+    print("Select items you wanna sell: ")
+    listed = list_items(items)
+    i = 0
+    for (name,count) in listed:
+        print(str(i) + ": " + name + " count: " + str(count))
+        i += 1
 
 def liquidate(username, password):
     jar = requests.cookies.RequestsCookieJar()
@@ -219,25 +243,55 @@ def liquidate(username, password):
 
     games = input("Select inventories you want to sell seperated by space " + str(types) + " :\n")
 
+    sell_type = input("1: All 2: Select items you wanna sell\n")
+
+    while (sell_type is not "1") and (sell_type is not "2"):
+        sell_type = input("You can only select 1 or 2")
+
     selected_games = games.split()
 
     inventories = [(x,y) for (x,y) in inventories if x in selected_games]
 
+    if sell_type is "1":
+        for appid, contextid in inventories:
+            items = list_inventory(market_jar, auth_ctx, appid, contextid)
 
-    for appid, contextid in inventories:
-        items = list_inventory(market_jar, auth_ctx, appid, contextid)
+            logger.info("Processing %s items for appid=%s, contextid=%s", len(items), appid, contextid)
 
-        logger.info("Processing %s items for appid=%s, contextid=%s", len(items), appid, contextid)
-
-        for item in items:
-            price = get_price(market_jar, auth_ctx, item)
-            while not price:  
-                time.sleep(5)
+            for item in items:
                 price = get_price(market_jar, auth_ctx, item)
-            if price:
-                if price > 20:
-                    price = math.ceil(float(price) / 1.155)
-                else:
-                    price -= 2
-                logger.info("Selling item %s for %s cents", item['market_hash_name'], price)
-                print(sell_item(market_jar, auth_ctx, item, price))
+                while not price:  
+                    time.sleep(5)
+                    price = get_price(market_jar, auth_ctx, item)
+                if price:
+                    if price > 20:
+                        price = math.ceil(float(price) / 1.155)
+                    else:
+                        price -= 2
+                    logger.info("Selling item %s for %s cents", item['market_hash_name'], price)
+                    print(sell_item(market_jar, auth_ctx, item, price))
+    elif sell_type is "2":
+        everything = []
+        for appid, contextid in inventories:
+            items = list_inventory(market_jar, auth_ctx, appid, contextid)
+
+            logger.info("Processing %s items for appid=%s, contextid=%s", len(items), appid, contextid)
+
+            for item in items:
+                everything.append(item)
+        print_items(everything)
+        selected = input()
+        sell = list(map(lambda x: everything[int(x)], selected.split())) 
+        for item in sell:
+                price = get_price(market_jar, auth_ctx, item)
+                while not price:  
+                    time.sleep(5)
+                    price = get_price(market_jar, auth_ctx, item)
+                if price:
+                    if price > 20:
+                        price = math.ceil(float(price) / 1.155)
+                    else:
+                        price -= 2
+                    logger.info("Selling item %s for %s cents", item['market_hash_name'], price)
+                    print(sell_item(market_jar, auth_ctx, item, price))
+
