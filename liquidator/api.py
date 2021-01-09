@@ -136,8 +136,14 @@ def list_inventory(jar, auth_ctx, appid, contextid):
     jar['strInventoryLastContext'] = '753_6'
 
     data = resp.json()
-    items = zip(data['assets'], data['descriptions'])
-    return [dict(item, **asset) for (asset, item) in items
+    #create description hashmap
+    description_map = {description['classid'] : description for description in data['descriptions']}
+
+    items = []
+    for asset in data['assets']:
+        items.append({**asset,**description_map[asset['classid']]})
+            
+    return [item for item in items
             if item.get('marketable')]
 
 def get_price(jar, auth_ctx, item_info):
@@ -198,17 +204,6 @@ def get_types(pages):
     uniques = []
     [uniques.append(i) for i in types if i not in uniques]
     return uniques
-
-def unique_market_names(items):
-    names = [] 
-    for item in items:
-        count = 0
-        for filtered in names:
-            if item['market_name'] == filtered:
-                count += 1
-        if count == 0:
-            names.append(item['market_name'])
-    return names
 
 def list_items(items):
     item_tuple = []
